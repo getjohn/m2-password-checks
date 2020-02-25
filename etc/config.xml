@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+	<default>
+		<customer>
+			<password>
+				<prevent_reusing_password>0</prevent_reusing_password>
+				<enforce_password_reset>0</enforce_password_reset>
+                <x_days>0</x_days>
+			</password>
+		</customer>
+	</default>
+</config>
