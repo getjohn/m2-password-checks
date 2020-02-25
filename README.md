@@ -72,5 +72,5 @@
 
  - Customer - Password History (password_history)
 
- - Customer - Password Last Changed Date (password_last_changed_date)
+ - Customer - Password Last Changed Date (password_last_changed_date) 
 
