@@ -49,8 +49,9 @@ class EditPost
     public function beforeExecute(
         \Magento\Customer\Controller\Account\EditPost $subject
     ) {
-        $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password');
-        if($preventReusingPassword == 1) {
+        $websitesScope = \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES;
+        $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password', $websitesScope);
+        if($preventReusingPassword > 0) {
             $customer = $this->customerRepository->getById($this->session->getCustomerId());
             $customAttributes = $customer->getCustomAttributes();
             if (!array_key_exists('password_history', $customAttributes)) {
@@ -62,6 +63,19 @@ class EditPost
                 $extensionAttributes->setData('password_history', $passwordHashArrayJson);
                 $customer->setExtensionAttributes($extensionAttributes);
                 $this->customerRepository->save($customer);
+            } else {
+                $oldPasswordHashArrayJson = $customAttributes['password_history']->getValue();
+                $oldPasswordHashArray = json_decode($oldPasswordHashArrayJson);
+                if(count($oldPasswordHashArray) > $preventReusingPassword) {
+                    $x = count($oldPasswordHashArray) - $preventReusingPassword;
+                    $oldPasswordHashArrayNew = array_slice($oldPasswordHashArray, $x);
+                    $passwordHashArrayJson = json_encode($oldPasswordHashArrayNew);
+
+                    $extensionAttributes = $customer->getExtensionAttributes();
+                    $extensionAttributes->setData('password_history', $passwordHashArrayJson);
+                    $customer->setExtensionAttributes($extensionAttributes);
+                    $this->customerRepository->save($customer);
+                }
             }
         }
 
@@ -72,8 +86,9 @@ class EditPost
         \Magento\Customer\Controller\Account\EditPost $subject,
         $result
     ) {
-        $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password');
-        if($preventReusingPassword == 1) {
+        $websitesScope = \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES;
+        $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password', $websitesScope);
+        if($preventReusingPassword > 0) {
             $customer = $this->customerRepository->getById($this->session->getCustomerId());
             $customerSecure = $this->customerRegistry->retrieveSecureData($customer->getId());
             $currentPasswordHash = $customerSecure->getPasswordHash();

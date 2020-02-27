@@ -80,8 +80,9 @@ class AccountManagement
         $username,
         $password
     ) {
-        $enforcePasswordReset = $this->scopeConfig->getValue('customer/password/enforce_password_reset');
-        if($enforcePasswordReset == 1) {
+        $websitesScope = \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES;
+        $enforcePasswordReset = $this->scopeConfig->getValue('customer/password/enforce_password_reset', $websitesScope);
+        if($enforcePasswordReset > 0) {
             $customer = $result;
             $customAttributes = $customer->getCustomAttributes();
             if (!array_key_exists('password_last_changed_date', $customAttributes)) {
@@ -93,7 +94,7 @@ class AccountManagement
             $today = new DateTime('now');
             $lastUpdatedDate = new DateTime($lastUpdatedDate);
             $interval = date_diff($today, $lastUpdatedDate)->format('%a');
-            $xDays = $this->scopeConfig->getValue('customer/password/x_days');
+            $xDays = $enforcePasswordReset;
             if ($interval >= $xDays) {
                 try {
                     $subject->initiatePasswordReset(
@@ -121,8 +122,9 @@ class AccountManagement
         $currentPassword,
         $newPassword
     ) {
-        $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password');
-        if($preventReusingPassword == 1) {
+        $websitesScope = \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES;
+        $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password', $websitesScope);
+        if($preventReusingPassword > 0) {
             $customer = $this->customerRepository->get($email);
             $customAttributes = $customer->getCustomAttributes();
             $oldPasswordHashArrayJson = $customAttributes['password_history']->getValue();
@@ -145,8 +147,9 @@ class AccountManagement
         $resetToken,
         $newPassword
     ) {
-        $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password');
-        if($preventReusingPassword == 1) {
+        $websitesScope = \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES;
+        $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password', $websitesScope);
+        if($preventReusingPassword > 0) {
             if (!$email) {
                 $customer = $this->getByToken->execute($resetToken);
             } else {

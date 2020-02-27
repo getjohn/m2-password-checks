@@ -5,7 +5,6 @@
 			<password>
 				<prevent_reusing_password>0</prevent_reusing_password>
 				<enforce_password_reset>0</enforce_password_reset>
-                <x_days>0</x_days>
 			</password>
 		</customer>
 	</default>
