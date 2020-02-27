@@ -4,7 +4,6 @@
 		<section id="customer" showInDefault="1" showInStore="1" showInWebsite="1" sortOrder="10" translate="label">
 			<label>customer</label>
 			<tab>customer</tab>
-			<resource>GetJohn_PasswordCheck::config_getjohn_passwordcheck</resource>
 			<group id="password" showInDefault="1" showInStore="1" showInWebsite="1" sortOrder="10" translate="label">
 				<label>password</label>
 				<field id="prevent_reusing_password" showInDefault="1" showInStore="0" showInWebsite="1" sortOrder="90" translate="label" type="text">
