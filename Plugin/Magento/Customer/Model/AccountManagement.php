@@ -4,15 +4,19 @@ namespace GetJohn\PasswordCheck\Plugin\Magento\Customer\Model;
 
 use DateTime;
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Model\CustomerRegistry;
-use Magento\Customer\Model\ForgotPasswordToken\GetCustomerByToken;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Encryption\EncryptorInterface as Encryptor;
 use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\SecurityViolationException;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Exception\State\ExpiredException;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\Escaper;
+use Magento\Framework\Phrase;
 
 /**
  * Class AccountManagement
@@ -52,9 +56,9 @@ class AccountManagement
     protected $escaper;
 
     /**
-     * @var GetCustomerByToken
+     * @var SearchCriteriaBuilder
      */
-    private $getByToken;
+    private $searchCriteriaBuilder;
 
     public function __construct(
         CustomerRepositoryInterface $customerRepository,
@@ -63,7 +67,7 @@ class AccountManagement
         ScopeConfigInterface $scopeConfig,
         ManagerInterface $messageManager,
         Escaper $escaper,
-        GetCustomerByToken $getByToken
+        SearchCriteriaBuilder $searchCriteriaBuilder
     ) {
         $this->customerRepository = $customerRepository;
         $this->customerRegistry = $customerRegistry;
@@ -71,7 +75,7 @@ class AccountManagement
         $this->scopeConfig = $scopeConfig;
         $this->messageManager = $messageManager;
         $this->escaper = $escaper;
-        $this->getByToken = $getByToken;
+        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
     }
 
     public function afterAuthenticate(
@@ -151,7 +155,7 @@ class AccountManagement
         $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password', $websitesScope);
         if($preventReusingPassword > 0) {
             if (!$email) {
-                $customer = $this->getByToken->execute($resetToken);
+                $customer = $this->matchCustomerByRpToken($resetToken);
             } else {
                 $customer = $this->customerRepository->get($email);
             }
@@ -183,6 +187,43 @@ class AccountManagement
             'Your password was too old. You will receive an email with a link to reset your password on %1. Please reset your password.',
             $this->escaper->escapeHtml($email)
         );
+    }
+
+    /**
+     * Match a customer by their RP token.
+     *
+     * @param string $rpToken
+     * @throws ExpiredException
+     * @throws NoSuchEntityException
+     *
+     * @return CustomerInterface
+     * @throws LocalizedException
+     */
+    private function matchCustomerByRpToken(string $rpToken): CustomerInterface
+    {
+        $this->searchCriteriaBuilder->addFilter(
+            'rp_token',
+            $rpToken
+        );
+        $this->searchCriteriaBuilder->setPageSize(1);
+        $found = $this->customerRepository->getList(
+            $this->searchCriteriaBuilder->create()
+        );
+        if ($found->getTotalCount() > 1) {
+            //Failed to generated unique RP token
+            throw new ExpiredException(
+                new Phrase('Reset password token expired.')
+            );
+        }
+        if ($found->getTotalCount() === 0) {
+            //Customer with such token not found.
+            throw NoSuchEntityException::singleField(
+                'rp_token',
+                $rpToken
+            );
+        }
+        //Unique customer found.
+        return $found->getItems()[0];
     }
 }
 
