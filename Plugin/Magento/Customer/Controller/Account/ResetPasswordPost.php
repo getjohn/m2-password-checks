@@ -4,6 +4,7 @@ namespace GetJohn\PasswordCheck\Plugin\Magento\Customer\Controller\Account;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Model\CustomerRegistry;
+use Magento\Customer\Model\ForgotPasswordToken\GetCustomerByToken;
 use Magento\Customer\Model\Session;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 
@@ -34,16 +35,23 @@ class ResetPasswordPost
      */
     private $scopeConfig;
 
+    /**
+     * @var GetCustomerByToken
+     */
+    private $getByToken;
+
     public function __construct(
         Session $customerSession,
         CustomerRepositoryInterface $customerRepository,
         CustomerRegistry $customerRegistry,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        GetCustomerByToken $getByToken
     ) {
         $this->session = $customerSession;
         $this->customerRepository = $customerRepository;
         $this->customerRegistry = $customerRegistry;
         $this->scopeConfig = $scopeConfig;
+        $this->getByToken = $getByToken;
     }
 
     public function beforeExecute(
@@ -52,7 +60,9 @@ class ResetPasswordPost
         $websitesScope = \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES;
         $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password', $websitesScope);
         if($preventReusingPassword > 0) {
-            $customer = $this->customerRepository->getById($this->session->getCustomerId());
+            $resetPasswordToken = (string)$subject->getRequest()->getQuery('token');
+            $customer = $this->getByToken->execute($resetPasswordToken);
+            $this->session->setCustomerId($customer->getId());
             $customAttributes = $customer->getCustomAttributes();
             if (!array_key_exists('password_history', $customAttributes)) {
                 $customerSecure = $this->customerRegistry->retrieveSecureData($customer->getId());
@@ -90,6 +100,7 @@ class ResetPasswordPost
         $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password', $websitesScope);
         if($preventReusingPassword > 0) {
             $customer = $this->customerRepository->getById($this->session->getCustomerId());
+            $this->session->unsCustomerId();
             $customerSecure = $this->customerRegistry->retrieveSecureData($customer->getId());
             $currentPasswordHash = $customerSecure->getPasswordHash();
             $customAttributes = $customer->getCustomAttributes();
