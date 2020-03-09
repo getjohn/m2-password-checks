@@ -3,9 +3,15 @@
 namespace GetJohn\PasswordCheck\Plugin\Magento\Customer\Controller\Account;
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Model\CustomerRegistry;
 use Magento\Customer\Model\Session;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Exception\State\ExpiredException;
+use Magento\Framework\Phrase;
 
 /**
  * Class ResetPasswordPost
@@ -34,16 +40,23 @@ class ResetPasswordPost
      */
     private $scopeConfig;
 
+    /**
+     * @var SearchCriteriaBuilder
+     */
+    private $searchCriteriaBuilder;
+
     public function __construct(
         Session $customerSession,
         CustomerRepositoryInterface $customerRepository,
         CustomerRegistry $customerRegistry,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        SearchCriteriaBuilder $searchCriteriaBuilder
     ) {
         $this->session = $customerSession;
         $this->customerRepository = $customerRepository;
         $this->customerRegistry = $customerRegistry;
         $this->scopeConfig = $scopeConfig;
+        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
     }
 
     public function beforeExecute(
@@ -52,7 +65,9 @@ class ResetPasswordPost
         $websitesScope = \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES;
         $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password', $websitesScope);
         if($preventReusingPassword > 0) {
-            $customer = $this->customerRepository->getById($this->session->getCustomerId());
+            $resetPasswordToken = (string)$subject->getRequest()->getQuery('token');
+            $customer = $this->matchCustomerByRpToken($resetPasswordToken);
+            $this->session->setCustomerId($customer->getId());
             $customAttributes = $customer->getCustomAttributes();
             if (!array_key_exists('password_history', $customAttributes)) {
                 $customerSecure = $this->customerRegistry->retrieveSecureData($customer->getId());
@@ -90,6 +105,7 @@ class ResetPasswordPost
         $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password', $websitesScope);
         if($preventReusingPassword > 0) {
             $customer = $this->customerRepository->getById($this->session->getCustomerId());
+            $this->session->unsCustomerId();
             $customerSecure = $this->customerRegistry->retrieveSecureData($customer->getId());
             $currentPasswordHash = $customerSecure->getPasswordHash();
             $customAttributes = $customer->getCustomAttributes();
@@ -116,5 +132,42 @@ class ResetPasswordPost
         }
 
         return $result;
+    }
+
+    /**
+     * Match a customer by their RP token.
+     *
+     * @param string $rpToken
+     * @throws ExpiredException
+     * @throws NoSuchEntityException
+     *
+     * @return CustomerInterface
+     * @throws LocalizedException
+     */
+    private function matchCustomerByRpToken(string $rpToken): CustomerInterface
+    {
+        $this->searchCriteriaBuilder->addFilter(
+            'rp_token',
+            $rpToken
+        );
+        $this->searchCriteriaBuilder->setPageSize(1);
+        $found = $this->customerRepository->getList(
+            $this->searchCriteriaBuilder->create()
+        );
+        if ($found->getTotalCount() > 1) {
+            //Failed to generated unique RP token
+            throw new ExpiredException(
+                new Phrase('Reset password token expired.')
+            );
+        }
+        if ($found->getTotalCount() === 0) {
+            //Customer with such token not found.
+            throw NoSuchEntityException::singleField(
+                'rp_token',
+                $rpToken
+            );
+        }
+        //Unique customer found.
+        return $found->getItems()[0];
     }
 }
