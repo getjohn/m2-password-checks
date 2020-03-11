@@ -5,7 +5,6 @@ namespace GetJohn\PasswordCheck\Plugin\Magento\Customer\Model;
 use DateTime;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
-use Magento\Customer\Model\CustomerRegistry;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Encryption\EncryptorInterface as Encryptor;
 use Magento\Framework\Exception\InputException;
@@ -29,11 +28,6 @@ class AccountManagement
      * @var CustomerRepositoryInterface
      */
     private $customerRepository;
-
-    /**
-     * @var CustomerRegistry
-     */
-    private $customerRegistry;
 
     /**
      * @var Encryptor
@@ -62,7 +56,6 @@ class AccountManagement
 
     public function __construct(
         CustomerRepositoryInterface $customerRepository,
-        CustomerRegistry $customerRegistry,
         Encryptor $encryptor,
         ScopeConfigInterface $scopeConfig,
         ManagerInterface $messageManager,
@@ -70,7 +63,6 @@ class AccountManagement
         SearchCriteriaBuilder $searchCriteriaBuilder
     ) {
         $this->customerRepository = $customerRepository;
-        $this->customerRegistry = $customerRegistry;
         $this->encryptor = $encryptor;
         $this->scopeConfig = $scopeConfig;
         $this->messageManager = $messageManager;
@@ -118,31 +110,6 @@ class AccountManagement
         }
 
         return $result;
-    }
-
-    public function beforeChangePassword(
-        \Magento\Customer\Model\AccountManagement $subject,
-        $email,
-        $currentPassword,
-        $newPassword
-    ) {
-        $websitesScope = \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES;
-        $preventReusingPassword = $this->scopeConfig->getValue('customer/password/prevent_reusing_password', $websitesScope);
-        if($preventReusingPassword > 0) {
-            $customer = $this->customerRepository->get($email);
-            $customAttributes = $customer->getCustomAttributes();
-            $oldPasswordHashArrayJson = $customAttributes['password_history']->getValue();
-            $oldPasswordHashArray = json_decode($oldPasswordHashArrayJson);
-            foreach ($oldPasswordHashArray as $oldPasswordHash) {
-                if ($this->encryptor->validateHash($newPassword, $oldPasswordHash)) {
-                    throw new LocalizedException(
-                        __("The new password was already used. Please enter another password.")
-                    );
-                }
-            }
-        }
-
-        return [$email, $currentPassword, $newPassword];
     }
 
     public function beforeResetPassword(

@@ -4,9 +4,12 @@
         <plugin disabled="false" name="GetJohn_PasswordCheck_Plugin_Magento_Customer_Controller_Account_EditPost" sortOrder="10" type="GetJohn\PasswordCheck\Plugin\Magento\Customer\Controller\Account\EditPost"/>
     </type>
     <type name="Magento\Customer\Controller\Account\ResetPasswordPost">
-        <plugin disabled="false" name="GetJohn_PasswordCheck_Plugin_Magento_Customer_Controller_Account_ResetPasswordPost" sortOrder="60" type="GetJohn\PasswordCheck\Plugin\Magento\Customer\Controller\Account\ResetPasswordPost"/>
+        <plugin disabled="false" name="GetJohn_PasswordCheck_Plugin_Magento_Customer_Controller_Account_ResetPasswordPost" sortOrder="20" type="GetJohn\PasswordCheck\Plugin\Magento\Customer\Controller\Account\ResetPasswordPost"/>
     </type>
     <type name="Magento\Customer\Model\AccountManagement">
-        <plugin disabled="false" name="GetJohn_PasswordCheck_Plugin_Magento_Customer_Model_AccountManagement" sortOrder="20" type="GetJohn\PasswordCheck\Plugin\Magento\Customer\Model\AccountManagement"/>
+        <plugin disabled="false" name="GetJohn_PasswordCheck_Plugin_Magento_Customer_Model_AccountManagement" sortOrder="30" type="GetJohn\PasswordCheck\Plugin\Magento\Customer\Model\AccountManagement"/>
+    </type>
+    <type name="Magento\Customer\Model\Authentication">
+        <plugin disabled="false" name="GetJohn_PasswordCheck_Plugin_Magento_Customer_Model_Authentication" sortOrder="40" type="GetJohn\PasswordCheck\Plugin\Magento\Customer\Model\Authentication"/>
     </type>
 </config>
