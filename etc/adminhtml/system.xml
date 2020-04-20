@@ -2,17 +2,14 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
 	<system>
 		<section id="customer" showInDefault="1" showInStore="1" showInWebsite="1" sortOrder="10" translate="label">
-			<label>customer</label>
-			<tab>customer</tab>
 			<group id="password" showInDefault="1" showInStore="1" showInWebsite="1" sortOrder="10" translate="label">
-				<label>password</label>
 				<field id="prevent_reusing_password" showInDefault="1" showInStore="0" showInWebsite="1" sortOrder="90" translate="label" type="text">
 					<label>Prevent Re-using Last X Passwords</label>
-					<comment/>
+					<comment>If zero, this check is disabled.</comment>
 				</field>
 				<field id="enforce_password_reset" showInDefault="1" showInStore="0" showInWebsite="1" sortOrder="100" translate="label" type="text">
 					<label>Enforce Password Reset Every X Days</label>
-					<comment/>
+					<comment>If zero, this check is disabled.</comment>
 				</field>
 			</group>
 		</section>
